@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1441699297 source:/home/ozzadar/Arduino/CPP/BluetoothSerial/main.cpp
+	<iostream>
+	<termios.h>
+	<stdio.h>
+	<fcntl.h>
+	<unistd.h>
+
