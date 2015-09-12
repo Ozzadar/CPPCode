@@ -1,8 +1,10 @@
 #include <iostream>
+#include <string.h>
 #include <termios.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstdlib>
 
 char *portName = "/dev/rfcomm0";
 char buf [256];
@@ -10,9 +12,27 @@ char buf [256];
 using namespace std;
 
 
+//basic 3space vector
+struct vec3 {
+    double x;
+    double y;
+    double z;
+
+};
+
+int readline ();
+int readGyro ();
+int readAccel ();
+void parseInput();
+
+int input = 0;
+int fileDescriptor;
+
+vec3 recentGyro;
+vec3 recentAccel;
+
 int main()
 {
-        int fileDescriptor;
 
         // Open the file descriptor in non-blocking mode
         fileDescriptor = open(portName, O_RDWR | O_NOCTTY);
@@ -21,7 +41,7 @@ int main()
         struct termios tOptions;
 
         //Get currently set options for the tty
-        tcgetattr(fileDescriptor, &tOptions);
+         tcgetattr(fileDescriptor, &tOptions);
 
         //Set Custom Options
 
@@ -67,17 +87,78 @@ int main()
         //flush anything already in the serial buffer
         tcflush(fileDescriptor, TCIFLUSH);
 
+        while (readline() != 0) {
 
-        //read up to 128 bytes from the fd
-        int n = read(fileDescriptor, buf, 29);
+            cin >> input;
 
-        while (n != -1) {
+            cout << input << '\n';
+            switch(input) {
+                case 1: {
+                    //readGyro(vec3 &output);
+                    cout << "gx: " << recentGyro.x << "\n gy: " << recentGyro.y << "\n gz: " << recentGyro.z << "\n";
+                    break;
+                }
+                case 2: {
+                    //readAccel(vec3 &output);
+                    cout << "ax: " << recentAccel.x << "\n ay: " << recentAccel.y << "\n az: " << recentAccel.z << "\n";
+                    break;
+                }
+                case 3: {
+                    //calibrate;
+                    break;
+                }
+                default: {
 
-            printf("%s\0", buf);
+                            //wait for arduino to reset
+                    usleep(1000*1000);
+                    tcflush(fileDescriptor, TCIFLUSH);
+                    return close(fileDescriptor);
+                }
 
-            n = read(fileDescriptor, buf, 29);
+
+
+            }
+            usleep (1000);
+
+        }
+}
+
+int readline() {
+
+   int n = read(fileDescriptor, buf, 29);
+   parseInput();
+   return n;
+
+}
+
+void parseInput() {
+
+
+    char s[2] = ",";
+    char *token;
+    double inputs[6];
+    int loopNumber = 0;
+
+    token = strtok(buf, s);
+    inputs[loopNumber] = atof(token);
+
+    loopNumber ++;
+    while (token != NULL) {
+
+        token = strtok(NULL, s);
+        if (token != NULL) {
+            inputs[loopNumber] = atof(token);
         }
 
-        int exit = close(fileDescriptor);
-        return exit;
+        loopNumber++;
+    }
+
+    recentAccel.x = inputs[0];
+    recentAccel.y = inputs[1];
+    recentAccel.z = inputs[2];
+    recentGyro.x = inputs[3];
+    recentGyro.y = inputs[4];
+    recentGyro.z = inputs[5];
+
+
 }
